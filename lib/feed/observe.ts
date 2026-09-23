@@ -10,7 +10,7 @@ export interface FeedCard {
 }
 
 export interface FeedWatcher {
-  /** Forget every decision made so far and look at the whole feed again. */
+  /** Forget which cards have been handled and look at the whole feed again. */
   rescan(): void;
   stop(): void;
 }
@@ -18,16 +18,34 @@ export interface FeedWatcher {
 /** Marks which video a card element was last processed for. */
 const PROCESSED_ATTR = 'data-jev-id';
 
-const CONTAINER_POLL_MS = 500;
-const CONTAINER_POLL_ATTEMPTS = 40;
+/**
+ * True while a card element is still showing the video it was processed for.
+ * Worth checking before acting on a decision that took a network round trip —
+ * by then the element may have been recycled for something else.
+ */
+export function stillShows(element: Element, videoId: string): boolean {
+  return element.getAttribute(PROCESSED_ATTR) === videoId;
+}
+
+/** How often to check that we're still attached to the feed that's on screen. */
+const RECHECK_MS = 1000;
 
 /**
  * Watches the home feed and hands every not-yet-seen video to `onCards`, both
  * for what's already on screen and for everything infinite scroll adds later.
  *
- * Cards are keyed by video id rather than by element because YouTube recycles
- * card elements as you scroll — the same node comes back holding a different
- * video, and that has to count as new.
+ * Two things make this less simple than a MutationObserver:
+ *
+ * YouTube is a single-page app. It tears the feed down and builds a new one on
+ * navigation without ever reloading the page, which leaves an observer bound to
+ * a container that is no longer on screen. Rather than trying to catch every
+ * navigation, the watcher re-checks on a timer that the container it holds is
+ * still the one in the document, and re-attaches when it isn't. That covers
+ * navigations nobody thought to listen for.
+ *
+ * YouTube also recycles card elements as you scroll, so cards are keyed by
+ * video id rather than by element: the same node coming back with a different
+ * video in it has to count as new.
  */
 export function watchFeed(
   ctx: ContentScriptContext,
@@ -65,34 +83,30 @@ export function watchFeed(
     scanTimer = ctx.setTimeout(scan, DEBOUNCE_MS);
   }
 
-  function attach(container: Element) {
-    contents = container.querySelector(FEED_CONTENTS) ?? container;
-
-    observer = new MutationObserver(scheduleScan);
-    observer.observe(contents, { childList: true, subtree: true });
-
-    scan();
-  }
-
-  // The grid is rendered after the shell, and after every SPA navigation back
-  // to the feed, so we wait for it rather than assuming it's there.
-  let attempts = 0;
-  function findContainer() {
+  /** Attach to whatever feed is on screen now, if it isn't the one we hold. */
+  function ensureAttached() {
     if (stopped || !ctx.isValid) return;
 
+    if (contents && document.contains(contents)) return;
+
     const container = document.querySelector(FEED_CONTAINER);
-    if (container) {
-      attach(container);
+    if (!container) {
+      // Off the home feed, or it hasn't rendered yet. Try again next tick.
+      observer?.disconnect();
+      observer = undefined;
+      contents = undefined;
       return;
     }
 
-    if (++attempts < CONTAINER_POLL_ATTEMPTS) {
-      ctx.setTimeout(findContainer, CONTAINER_POLL_MS);
-    } else {
-      console.warn('[jev] gave up looking for the feed container');
-    }
+    observer?.disconnect();
+    contents = container.querySelector(FEED_CONTENTS) ?? container;
+    observer = new MutationObserver(scheduleScan);
+    observer.observe(contents, { childList: true, subtree: true });
+    scan();
   }
-  findContainer();
+
+  ensureAttached();
+  ctx.setInterval(ensureAttached, RECHECK_MS);
 
   return {
     rescan() {
