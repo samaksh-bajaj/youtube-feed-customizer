@@ -5,7 +5,7 @@ const enabledInput = document.querySelector<HTMLInputElement>('#enabled')!;
 const saveButton = document.querySelector<HTMLButtonElement>('#save')!;
 const status = document.querySelector<HTMLSpanElement>('#status')!;
 
-let statusTimer: number | undefined;
+let statusTimer: ReturnType<typeof setTimeout> | undefined;
 
 function flash(message: string) {
   status.textContent = message;

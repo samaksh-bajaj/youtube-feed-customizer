@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "echo 'Nothing to build: the extension is packaged separately with wxt.'",
+  "outputDirectory": "public"
+}

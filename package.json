@@ -12,7 +12,13 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@vercel/node": "^13.0.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.6.0",
     "wxt": "^0.21.0"
+  },
+  "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0"
   }
 }
