@@ -1,0 +1,146 @@
+/* Shared between the popup and the options page. */
+
+:root {
+  --bg: #ffffff;
+  --fg: #0f0f0f;
+  --muted: #606060;
+  --line: #e0e0e0;
+  --field: #f7f7f7;
+  --accent: #0f0f0f;
+  --accent-fg: #ffffff;
+  --link: #065fd4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f0f;
+    --fg: #f1f1f1;
+    --muted: #aaaaaa;
+    --line: #303030;
+    --field: #1c1c1c;
+    --accent: #f1f1f1;
+    --accent-fg: #0f0f0f;
+    --link: #3ea6ff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font:
+    14px/1.45 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--link);
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+textarea,
+input[type='password'],
+input[type='text'] {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--fg);
+  font: inherit;
+  resize: vertical;
+}
+
+textarea:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: -1px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+button {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+.status {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Toggle switch */
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.track {
+  display: block;
+  width: 36px;
+  height: 20px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.knob {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  transition: transform 120ms ease;
+}
+
+.switch input:checked + .track {
+  background: #3ea6ff;
+}
+
+.switch input:checked + .track .knob {
+  transform: translateX(16px);
+}
+
+.switch input:focus-visible + .track {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}

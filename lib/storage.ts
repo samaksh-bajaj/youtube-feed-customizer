@@ -9,3 +9,11 @@ export const ruleItem = storage.defineItem<string>('local:rule', {
 export const enabledItem = storage.defineItem<boolean>('local:enabled', {
   fallback: true,
 });
+
+/**
+ * The user's own TypeSafe key. Stored locally and read only by the background
+ * worker, which is the one context no web page can reach.
+ */
+export const apiKeyItem = storage.defineItem<string>('local:apiKey', {
+  fallback: '',
+});

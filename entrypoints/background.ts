@@ -2,6 +2,7 @@ import type { ClassifyReply, HiddenCountReply, Message } from '@/lib/messages';
 import type { VideoMeta } from '@/lib/types';
 import { classifyBatch } from '@/lib/classify';
 import { BATCH_SIZE } from '@/lib/policy';
+import { apiKeyItem } from '@/lib/storage';
 
 export default defineBackground(() => {
   // Judgments for this browser session, keyed by rule and video. Keying on the
@@ -55,15 +56,22 @@ async function classify(
     else scores[video.videoId] = cached;
   }
 
+  if (unknown.length === 0) return { scores };
+
+  const apiKey = await apiKeyItem.getValue();
+  if (!apiKey) return { scores, problem: 'no-api-key' };
+
+  let failed = false;
   const batches = chunk(unknown, BATCH_SIZE);
   const results = await Promise.all(
     batches.map(async (batch) => {
       try {
-        return await classifyBatch(rule, batch);
+        return await classifyBatch(apiKey, rule, batch);
       } catch (error) {
-        // Fail open: no scores means nothing gets hidden. A broken backend
+        // Fail open: no scores means nothing gets hidden. A broken request
         // must never eat someone's feed.
         console.error('[jev] classification failed', error);
+        failed = true;
         return {};
       }
     }),
@@ -76,7 +84,7 @@ async function classify(
     }
   }
 
-  return { scores };
+  return failed ? { scores, problem: 'request-failed' } : { scores };
 }
 
 function cacheKey(rule: string, videoId: string): string {

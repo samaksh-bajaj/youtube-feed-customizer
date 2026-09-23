@@ -4,8 +4,8 @@
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![WXT](https://img.shields.io/badge/WXT-Chrome_MV3-67D4F8)
-![Vercel](https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white)
 ![TypeSafe](https://img.shields.io/badge/Jev-System_One-6E56CF)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 YouTube's home feed is whatever the recommendation engine decides it is. This extension puts one
 sentence in front of it:
@@ -23,14 +23,32 @@ your taste changes.
 
 ---
 
+## Install
+
+1. Download `youtube-feed-customizer-<version>-chrome.zip` from
+   [Releases](../../releases/latest) and unzip it.
+2. Go to `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick
+   the unzipped folder.
+3. Click the extension icon → **Add a key** → paste a [TypeSafe](https://typesafe.ai) API key.
+4. Type your rule in the popup, hit **Save**, and open YouTube.
+
+The extension uses **your own** TypeSafe key, so the videos it looks at go to your account and
+nobody else's. The key is stored in your browser's extension storage and read only by the
+extension's background worker, which no web page can reach.
+
+> Not on the Chrome Web Store, so Chrome won't auto-update it — grab a new zip when there's a
+> release you want.
+
+---
+
 ## How it works
 
 ```
-┌──────────────┐   rule + on/off    ┌────────────────────┐
-│    popup     │ ─────────────────▶ │  extension storage │
-└──────────────┘                    └─────────┬──────────┘
-                                              │
-┌─────────────────────────────────────────────▼──────────┐
+┌──────────────┐  rule + on/off   ┌────────────────────┐  API key  ┌──────────────┐
+│    popup     │ ───────────────▶ │  extension storage │ ◀──────── │   options    │
+└──────────────┘                  └─────────┬──────────┘           └──────────────┘
+                                            │
+┌───────────────────────────────────────────▼────────────┐
 │ content script (youtube.com)                           │
 │  • reads title + channel off each feed card            │
 │  • MutationObserver catches infinite scroll            │
@@ -40,12 +58,8 @@ your taste changes.
                           │  batched, deduped
 ┌─────────────────────────▼──────────────────────────────┐
 │ background worker — the only thing on the network      │
+│  • holds the key; no page context can reach it         │
 │  • caches judgments by (rule, videoId)                 │
-└─────────────────────────┬──────────────────────────────┘
-                          │  POST /api/classify + x-jev-secret
-┌─────────────────────────▼──────────────────────────────┐
-│ Vercel function — holds the API key                    │
-│  • one request carries ten videos, one Noul each       │
 └─────────────────────────┬──────────────────────────────┘
                           ▼
                     api.typesafe.ai
@@ -76,9 +90,8 @@ questions: {
 This is the fan-out pattern from the TypeSafe docs: the rule is serialised once and ten videos
 cost one round trip instead of ten.
 
-The endpoint returns **probabilities, not decisions**. The hide threshold lives in the
-extension, so retuning it never needs a redeploy. Measured on a four-video sample against the
-rule above:
+The model returns **probabilities, not decisions** — the hide threshold lives in the extension,
+so retuning it is a one-constant change. Measured on a four-video sample against the rule above:
 
 | Video                                            | Jev  | Result |
 | ------------------------------------------------ | ---- | ------ |
@@ -114,59 +127,34 @@ stops, that's the only file to open.
 
 ## Layout
 
-| Path                        | Role                                                             |
-| --------------------------- | ---------------------------------------------------------------- |
-| `entrypoints/content.ts`    | Finds cards, hides them, watches for new ones                    |
-| `entrypoints/background.ts` | The only thing that talks to the network; caches decisions       |
-| `entrypoints/popup/`        | Rule input, on/off toggle, hidden count                          |
-| `lib/feed/`                 | Selectors, extraction, hiding, the observer                      |
-| `lib/policy.ts`             | Hide threshold and batch size — the two knobs worth turning      |
-| `api/classify.ts`           | Vercel function: builds the Jev questions, returns probabilities |
+| Path                        | Role                                                        |
+| --------------------------- | ----------------------------------------------------------- |
+| `entrypoints/content.ts`    | Finds cards, hides them, watches for new ones               |
+| `entrypoints/background.ts` | The only thing that talks to the network; caches decisions  |
+| `entrypoints/popup/`        | Rule input, on/off toggle, hidden count                     |
+| `entrypoints/options/`      | Where the API key is entered                                |
+| `lib/judgment.ts`           | The question Jev is asked — the only definition of it       |
+| `lib/feed/`                 | Selectors, extraction, hiding, the observer                 |
+| `lib/policy.ts`             | Hide threshold and batch size — the two knobs worth turning |
 
 Extending it is meant to be boring: add a surface (search, watch-page sidebar) by adding
 selectors; change the judgment by editing one function; retune by changing one constant.
 
 ---
 
-## Running it
+## Development
 
 ```sh
 npm install
-cp .env.example .env     # fill in the four values
-npm run build
+npm run dev      # Chrome with the extension loaded, hot reloading
 ```
 
-Then load `.output/chrome-mv3` at `chrome://extensions` with Developer mode on.
-
-### Deploying the backend
-
-The extension never holds the TypeSafe key — a single Vercel function does.
-
-```sh
-npx vercel
-npx vercel env add TYPESAFE_API_KEY  production
-npx vercel env add JEV_SHARED_SECRET production
-npx vercel --prod
-```
-
-Set `WXT_CLASSIFY_URL` in `.env` to your deployment's `/api/classify` and rebuild. The manifest's
-host permission is derived from that same variable, so localhost and production need no manifest
-edit. Smoke test:
-
-```sh
-curl -s -X POST "$WXT_CLASSIFY_URL" \
-  -H "x-jev-secret: $JEV_SHARED_SECRET" -H 'content-type: application/json' \
-  -d '{"rule":"no clickbait","videos":[{"videoId":"a1","title":"I Ate Beige Food For 30 Days (GONE WRONG)","channel":"PrankLord"}]}'
-```
-
-### Commands
-
-| Command           | What it does                                    |
-| ----------------- | ----------------------------------------------- |
-| `npm run dev`     | Chrome with the extension loaded, hot reloading |
-| `npm run build`   | Production build into `.output/`                |
-| `npm run compile` | `tsc --noEmit`                                  |
-| `npm run format`  | Prettier                                        |
+| Command           | What it does                     |
+| ----------------- | -------------------------------- |
+| `npm run build`   | Production build into `.output/` |
+| `npm run compile` | `tsc --noEmit`                   |
+| `npm run format`  | Prettier                         |
+| `npm run zip`     | Packaged extension for a release |
 
 ---
 
@@ -175,12 +163,12 @@ curl -s -X POST "$WXT_CLASSIFY_URL" \
 - **Home feed only.** Search results and watch-page recommendations are untouched. The
   indirection to add them is in place; the selectors aren't.
 - **Shorts and shelves are left alone** — only regular feed videos are judged.
-- **The shared secret ships inside the extension bundle**, so it's a speed bump against casual
-  scraping, not authentication. Per-IP rate limiting is the fix if the endpoint is ever abused.
+- **You need your own TypeSafe key.** There's no hosted backend, which means nothing to pay for
+  and nothing to trust, but also no zero-setup install.
 - **Judgment uses title and channel only.** No description, no transcript, no thumbnail.
-- **It fails open.** A broken backend, an expired key, an unreachable worker — every one of them
-  leaves the feed exactly as YouTube served it. A filter that eats your feed when it breaks is
-  worse than no filter.
+- **It fails open.** A missing key, an expired key, a network error, an unreachable worker —
+  every one of them leaves the feed exactly as YouTube served it. A filter that eats your feed
+  when it breaks is worse than no filter.
 
 ## License
 

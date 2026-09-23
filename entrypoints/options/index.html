@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Feed Customizer — Settings</title>
+  </head>
+  <body>
+    <main>
+      <h1>YouTube Feed Customizer</h1>
+      <p class="lede">
+        Your feed rule is judged by
+        <a href="https://typesafe.ai" target="_blank" rel="noreferrer">Jev</a>,
+        which needs an API key. The extension uses your own key, so the videos
+        it looks at go to your TypeSafe account and nobody else's.
+      </p>
+
+      <label class="field-label" for="api-key">TypeSafe API key</label>
+      <input
+        id="api-key"
+        type="password"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="apikey_…"
+      />
+
+      <div class="row">
+        <button id="save" type="button">Save</button>
+        <span id="status" class="status" aria-live="polite"></span>
+      </div>
+
+      <p class="fine">
+        Stored in this browser's extension storage and read only by the
+        extension's background worker, which no web page can reach. It is never
+        sent anywhere except api.typesafe.ai. Get a key at
+        <a href="https://typesafe.ai" target="_blank" rel="noreferrer"
+          >typesafe.ai</a
+        >.
+      </p>
+    </main>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

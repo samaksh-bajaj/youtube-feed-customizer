@@ -1,40 +1,32 @@
-import type { ClassifyRequest, ClassifyResponse } from './api';
-import { SECRET_HEADER } from './api';
+import { TypeSafeClient } from '@typesafe-ai/sdk';
 import type { VideoMeta } from './types';
-
-const CLASSIFY_URL = import.meta.env.WXT_CLASSIFY_URL;
-const SHARED_SECRET = import.meta.env.WXT_JEV_SHARED_SECRET;
+import { buildQuestions, buildState, questionName } from './judgment';
 
 /**
- * Calls the backend for one batch. Only the background worker may use this:
- * host permissions exempt it from CORS, and a content script's fetch would be
- * subject to youtube.com's rules instead.
+ * Asks Jev about one batch of videos, using the key the user supplied.
+ *
+ * This runs in the background service worker, which has no `window` and is not
+ * reachable from any web page — the key never touches youtube.com. It also
+ * means the SDK's browser guard doesn't apply, so retries and backoff come for
+ * free.
  */
 export async function classifyBatch(
+  apiKey: string,
   rule: string,
   videos: VideoMeta[],
 ): Promise<Record<string, number>> {
-  if (!CLASSIFY_URL || !SHARED_SECRET) {
-    throw new Error(
-      'WXT_CLASSIFY_URL and WXT_JEV_SHARED_SECRET must be set at build time',
-    );
-  }
+  const client = new TypeSafeClient({ apiKey });
 
-  const body: ClassifyRequest = { rule, videos };
-
-  const response = await fetch(CLASSIFY_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      [SECRET_HEADER]: SHARED_SECRET,
-    },
-    body: JSON.stringify(body),
+  const { answers } = await client.systemOne({
+    state: buildState(rule, videos),
+    questions: buildQuestions(videos),
   });
 
-  if (!response.ok) {
-    throw new Error(`Classifier returned ${response.status}`);
-  }
+  const scores: Record<string, number> = {};
+  videos.forEach((video, index) => {
+    const answer = answers[questionName(index)];
+    if (answer) scores[video.videoId] = answer.noul;
+  });
 
-  const { scores } = (await response.json()) as ClassifyResponse;
   return scores;
 }

@@ -14,6 +14,8 @@ export interface ClassifyMessage {
  */
 export interface ClassifyReply {
   scores: Record<string, number>;
+  /** Set when nothing could be judged, so the popup can explain why. */
+  problem?: 'no-api-key' | 'request-failed';
 }
 
 /** Content script tells the worker how many videos it has hidden. */

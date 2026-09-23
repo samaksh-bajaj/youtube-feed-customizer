@@ -1,41 +1,6 @@
-:root {
-  --bg: #ffffff;
-  --fg: #0f0f0f;
-  --muted: #606060;
-  --line: #e0e0e0;
-  --field: #f7f7f7;
-  --accent: #0f0f0f;
-  --accent-fg: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f0f0f;
-    --fg: #f1f1f1;
-    --muted: #aaaaaa;
-    --line: #303030;
-    --field: #1c1c1c;
-    --accent: #f1f1f1;
-    --accent-fg: #0f0f0f;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
-
 body {
   width: 320px;
-  margin: 0;
   padding: 16px;
-  background: var(--bg);
-  color: var(--fg);
-  font:
-    14px/1.45 system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
 }
 
 header {
@@ -45,63 +10,6 @@ header {
   margin-bottom: 14px;
 }
 
-h1 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.field-label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-textarea {
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--field);
-  color: var(--fg);
-  font: inherit;
-  resize: vertical;
-}
-
-textarea:focus-visible {
-  outline: 2px solid var(--fg);
-  outline-offset: -1px;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-button {
-  padding: 7px 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-fg);
-  font: inherit;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-button:hover {
-  opacity: 0.85;
-}
-
-#status {
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .count {
   margin-left: auto;
   color: var(--muted);
@@ -109,43 +17,24 @@ button:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* Toggle switch */
-.switch input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
+/* Shown only when no API key has been set yet. */
+.notice {
+  display: none;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
-.track {
+.notice[data-visible] {
   display: block;
-  width: 36px;
-  height: 20px;
-  padding: 2px;
-  border-radius: 999px;
-  background: var(--line);
-  cursor: pointer;
-  transition: background 120ms ease;
 }
 
-.knob {
-  display: block;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--bg);
-  transition: transform 120ms ease;
-}
-
-.switch input:checked + .track {
-  background: #3ea6ff;
-}
-
-.switch input:checked + .track .knob {
-  transform: translateX(16px);
-}
-
-.switch input:focus-visible + .track {
-  outline: 2px solid var(--fg);
-  outline-offset: 2px;
+.notice button {
+  margin-top: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
 }

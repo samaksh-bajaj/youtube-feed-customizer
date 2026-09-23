@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Feed Customizer</title>
-    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <header>
@@ -14,6 +13,11 @@
         <span class="track"><span class="knob"></span></span>
       </label>
     </header>
+
+    <div class="notice" id="no-key">
+      This needs a TypeSafe API key before it can judge anything.
+      <button id="open-options" type="button">Add a key</button>
+    </div>
 
     <label class="field-label" for="rule">What do you want on your feed?</label>
     <textarea
@@ -25,7 +29,7 @@
 
     <div class="row">
       <button id="save" type="button">Save</button>
-      <span id="status" aria-live="polite"></span>
+      <span id="status" class="status" aria-live="polite"></span>
       <span id="hidden-count" class="count"></span>
     </div>
 

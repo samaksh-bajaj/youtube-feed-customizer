@@ -1,11 +1,15 @@
+import '@/assets/ui.css';
+import './style.css';
 import type { HiddenCountMessage, HiddenCountReply } from '@/lib/messages';
-import { enabledItem, ruleItem } from '@/lib/storage';
+import { apiKeyItem, enabledItem, ruleItem } from '@/lib/storage';
 
 const ruleInput = document.querySelector<HTMLTextAreaElement>('#rule')!;
 const enabledInput = document.querySelector<HTMLInputElement>('#enabled')!;
 const saveButton = document.querySelector<HTMLButtonElement>('#save')!;
 const status = document.querySelector<HTMLSpanElement>('#status')!;
 const hiddenCount = document.querySelector<HTMLSpanElement>('#hidden-count')!;
+const noKeyNotice = document.querySelector<HTMLDivElement>('#no-key')!;
+const openOptions = document.querySelector<HTMLButtonElement>('#open-options')!;
 
 let statusTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -15,12 +19,16 @@ function flash(message: string) {
   statusTimer = setTimeout(() => (status.textContent = ''), 1600);
 }
 
-const [rule, enabled] = await Promise.all([
+const [rule, enabled, apiKey] = await Promise.all([
   ruleItem.getValue(),
   enabledItem.getValue(),
+  apiKeyItem.getValue(),
 ]);
 ruleInput.value = rule;
 enabledInput.checked = enabled;
+if (!apiKey) noKeyNotice.setAttribute('data-visible', '');
+
+openOptions.addEventListener('click', () => browser.runtime.openOptionsPage());
 
 saveButton.addEventListener('click', async () => {
   await ruleItem.setValue(ruleInput.value.trim());
