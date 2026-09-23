@@ -1,5 +1,9 @@
 import type { FeedCard } from '@/lib/feed/observe';
-import type { ClassifyMessage, ClassifyReply, ReportHiddenMessage } from '@/lib/messages';
+import type {
+  ClassifyMessage,
+  ClassifyReply,
+  ReportHiddenMessage,
+} from '@/lib/messages';
 import type { VideoMeta } from '@/lib/types';
 import { getHiddenCount, hideCard, showAll } from '@/lib/feed/hide';
 import { stillShows, watchFeed } from '@/lib/feed/observe';

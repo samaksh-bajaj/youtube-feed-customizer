@@ -33,6 +33,4 @@ export interface HiddenCountReply {
 }
 
 export type Message =
-  | ClassifyMessage
-  | ReportHiddenMessage
-  | HiddenCountMessage;
+  ClassifyMessage | ReportHiddenMessage | HiddenCountMessage;

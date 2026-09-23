@@ -1,8 +1,4 @@
-import type {
-  ClassifyReply,
-  HiddenCountReply,
-  Message,
-} from '@/lib/messages';
+import type { ClassifyReply, HiddenCountReply, Message } from '@/lib/messages';
 import type { VideoMeta } from '@/lib/types';
 import { classifyBatch } from '@/lib/classify';
 import { BATCH_SIZE } from '@/lib/policy';

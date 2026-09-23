@@ -1,11 +1,5 @@
 import type { VideoMeta } from '@/lib/types';
-import {
-  CHANNEL,
-  ID_CLASS_PREFIX,
-  ID_HOST,
-  LOCKUP,
-  TITLE,
-} from './selectors';
+import { CHANNEL, ID_CLASS_PREFIX, ID_HOST, LOCKUP, TITLE } from './selectors';
 
 /**
  * Read a feed card. Returns null for anything that isn't a fully rendered
