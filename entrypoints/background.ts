@@ -1,4 +1,8 @@
-import type { ClassifyMessage, ClassifyReply } from '@/lib/messages';
+import type {
+  ClassifyReply,
+  HiddenCountReply,
+  Message,
+} from '@/lib/messages';
 import type { VideoMeta } from '@/lib/types';
 import { classifyBatch } from '@/lib/classify';
 import { BATCH_SIZE } from '@/lib/policy';
@@ -8,14 +12,37 @@ export default defineBackground(() => {
   // rule means editing the rule invalidates the old answers for free.
   const cache = new Map<string, number>();
 
-  browser.runtime.onMessage.addListener(
-    (message: ClassifyMessage, _sender, sendResponse) => {
-      if (message?.type !== 'classify') return;
+  // What each tab is currently hiding, so the popup has something to show.
+  const hiddenByTab = new Map<number, number>();
 
-      classify(message.rule, message.videos, cache).then(sendResponse);
-      return true; // keeps the channel open for the async reply
+  browser.runtime.onMessage.addListener(
+    (message: Message, sender, sendResponse) => {
+      switch (message?.type) {
+        case 'classify':
+          classify(message.rule, message.videos, cache).then(sendResponse);
+          return true; // keeps the channel open for the async reply
+
+        case 'report-hidden': {
+          const tabId = sender.tab?.id;
+          if (tabId !== undefined) hiddenByTab.set(tabId, message.count);
+          return false;
+        }
+
+        case 'hidden-count': {
+          const reply: HiddenCountReply = {
+            count: hiddenByTab.get(message.tabId) ?? 0,
+          };
+          sendResponse(reply);
+          return false;
+        }
+
+        default:
+          return false;
+      }
     },
   );
+
+  browser.tabs.onRemoved.addListener((tabId) => hiddenByTab.delete(tabId));
 });
 
 async function classify(

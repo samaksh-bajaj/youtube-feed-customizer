@@ -1,7 +1,7 @@
 import type { FeedCard } from '@/lib/feed/observe';
-import type { ClassifyMessage, ClassifyReply } from '@/lib/messages';
+import type { ClassifyMessage, ClassifyReply, ReportHiddenMessage } from '@/lib/messages';
 import type { VideoMeta } from '@/lib/types';
-import { getHiddenCount, hideCard } from '@/lib/feed/hide';
+import { getHiddenCount, hideCard, showAll } from '@/lib/feed/hide';
 import { stillShows, watchFeed } from '@/lib/feed/observe';
 import { isHomeFeed } from '@/lib/feed/selectors';
 import { HIDE_THRESHOLD } from '@/lib/policy';
@@ -12,19 +12,17 @@ export default defineContentScript({
   runAt: 'document_idle',
 
   async main(ctx) {
-    const [rule, enabled] = await Promise.all([
-      ruleItem.getValue(),
-      enabledItem.getValue(),
-    ]);
-
-    if (!enabled || rule === '') return;
+    let rule = await ruleItem.getValue();
+    let enabled = await enabledItem.getValue();
 
     // Decisions for this page, so a card that YouTube re-renders can be hidden
     // again immediately instead of waiting on another round trip.
     const decisions = new Map<string, boolean>();
 
+    const filtering = () => enabled && rule !== '' && isHomeFeed();
+
     async function handleCards(cards: FeedCard[]) {
-      if (!isHomeFeed()) return;
+      if (!filtering()) return;
 
       const undecided: FeedCard[] = [];
       for (const card of cards) {
@@ -33,7 +31,10 @@ export default defineContentScript({
         else if (decided) hideCard(card.element);
       }
 
-      if (undecided.length === 0) return;
+      if (undecided.length === 0) {
+        reportHidden();
+        return;
+      }
 
       const scores = await requestScores(
         rule,
@@ -56,9 +57,29 @@ export default defineContentScript({
         `[jev] judged ${undecided.length} new video(s), ` +
           `${getHiddenCount()} hidden on this page`,
       );
+      reportHidden();
     }
 
-    watchFeed(ctx, handleCards);
+    const watcher = watchFeed(ctx, handleCards);
+
+    // Editing the rule invalidates every judgment made under the old one.
+    ruleItem.watch((next) => {
+      rule = next;
+      decisions.clear();
+      showAll();
+      reportHidden();
+      watcher.rescan();
+    });
+
+    enabledItem.watch((next) => {
+      enabled = next;
+      if (enabled) {
+        watcher.rescan();
+      } else {
+        showAll();
+        reportHidden();
+      }
+    });
   },
 });
 
@@ -76,4 +97,15 @@ async function requestScores(
     console.error('[jev] could not reach the background worker', error);
     return {};
   }
+}
+
+/** Tells the worker what this tab is hiding, so the popup can show a number. */
+function reportHidden() {
+  const message: ReportHiddenMessage = {
+    type: 'report-hidden',
+    count: getHiddenCount(),
+  };
+  browser.runtime.sendMessage(message).catch(() => {
+    // The worker may be asleep. The count is cosmetic; losing it is fine.
+  });
 }

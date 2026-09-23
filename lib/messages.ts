@@ -16,4 +16,23 @@ export interface ClassifyReply {
   scores: Record<string, number>;
 }
 
-export type Message = ClassifyMessage;
+/** Content script tells the worker how many videos it has hidden. */
+export interface ReportHiddenMessage {
+  type: 'report-hidden';
+  count: number;
+}
+
+/** Popup asks the worker what a given tab has hidden. */
+export interface HiddenCountMessage {
+  type: 'hidden-count';
+  tabId: number;
+}
+
+export interface HiddenCountReply {
+  count: number;
+}
+
+export type Message =
+  | ClassifyMessage
+  | ReportHiddenMessage
+  | HiddenCountMessage;

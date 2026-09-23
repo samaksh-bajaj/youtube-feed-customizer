@@ -97,6 +97,13 @@ button:hover {
   font-size: 12px;
 }
 
+.count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Toggle switch */
 .switch input {
   position: absolute;
